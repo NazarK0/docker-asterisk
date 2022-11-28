@@ -1,13 +1,15 @@
 FROM debian:bullseye
+RUN apt update && apt install -y make linux-headers-$(uname -r) perl gcc autoconf pkg-config m4 libtool automake
+#RUN apt update && apt install -y libpath-tiny-perl
 WORKDIR /usr/local/src
-RUN  ./preinstall.sh
-COPY --link src .
+COPY src .
 
 # Install Dahdi
 WORKDIR /usr/local/src/dahdi
 RUN make
 RUN make install
 RUN make config
+RUN make install-config
 
 # Install libPRI
 WORKDIR /usr/local/src/libpri
