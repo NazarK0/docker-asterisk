@@ -1,7 +1,7 @@
 FROM debian:bullseye
 WORKDIR /usr/local/src
 COPY src .
-RUN apt update && apt install -y make gcc linux-headers-$(uname -r)
+RUN apt update && apt install -y make gcc linux-headers-$(uname -r) perl autoconf
 
 # Install Dahdi
 WORKDIR /usr/local/src/dahdi
