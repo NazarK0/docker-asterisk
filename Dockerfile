@@ -13,16 +13,19 @@ RUN make && make install && make config && make install-config
 RUN apt install -y libpri1.4
 
 # Install Asterisk
+WORKDIR /usr/local/src/asterisk/contrib/scripts
+RUN ./get_mp3_source.sh
+RUN ./install_prereq install
 WORKDIR /usr/local/src/asterisk
 RUN ./configure
-RUN make && make distclean
-WORKDIR /usr/local/src/asterisk/contrib/scripts
-RUN ./install_prereq install
-RUN ./install_prereq install-unpacked
 RUN make menuselect
+#RUN make menuselect
 RUN make && make install
-RUN make samples
-RUN make config && make install-logrotate
+RUN make progdocs
+RUN make samples && make config && make ldconfig
+RUN make install-logrotate
+RUN groupadd asterisk && useradd -r -d /var/lib/asterisk -g asterisk asterisk && usermod -aG audio,dialout asterisk
+RUN chown -R asterisk.asterisk /etc/asterisk && chown -R asterisk.asterisk /var/{lib,log,spool}/asterisk && chown -R asterisk.asterisk /usr/lib/asterisk
 
 
 ENV PORT 80
