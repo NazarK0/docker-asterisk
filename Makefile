@@ -1,7 +1,7 @@
 run:
-	docker build -t asterisk . && docker run -p 80:80 asterisk
+	docker build -t asterisk . && docker run -p 80:80 asterisk --name nazark0/asterisk
 push:
-	docker compose -f docker-compose.build.yml build --compress --force-rm
+	docker container commit asterisk nazark0/asterisk:latest
 	docker image tag zsu-cms-dev_cms:latest 31081991/zsu-cms
 	docker push 31081991/zsu-cms
 stop:
