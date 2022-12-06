@@ -60,11 +60,11 @@ EXPOSE 10000-20000/udp
 # IAX
 EXPOSE 4569/udp
 
-RUN /etc/init.d/dahdi start
-RUN lsmod | grep dahdi
+ADD asterisk /etc/asterisk
 
-RUN /etc/init.d/asterisk status
-RUN /etc/init.d/asterisk start
-RUN asterisk -rvvvvvvvvvvvvvvvvvvv
+RUN invoke-rc.d dahdi start
+RUN service asterisk start
+# RUN lsmod | grep dahdi
+# RUN asterisk -rvvvvvvvvvvvvvvvvvvv
 
-# CMD tail -f /dev/null
+ENTRYPOINT asterisk -cvvvvv

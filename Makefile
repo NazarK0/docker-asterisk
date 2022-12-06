@@ -4,7 +4,7 @@ run:
 push:
 	docker container commit asterisk-dev nazark0/asterisk:latest
 	docker push nazark0/asterisk
-stop:
+rm:
 	docker stop asterisk-dev && docker rm asterisk-dev
 console:
 	docker exec -it asterisk-dev bash
