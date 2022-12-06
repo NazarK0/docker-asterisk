@@ -5,6 +5,9 @@ RUN apt update && apt upgrade -y
 RUN apt install -y libssl-dev libncurses-dev zlib1g-dev make gcc g++ libnewt-dev subversion linux-headers-$(uname -r) libxml2-dev
 RUN apt install -y perl autoconf build-essential pkg-config m4 libtool automake autoconf wget libedit-dev uuid-dev libjansson-dev libsqlite3-dev
 
+# Install tools
+RUN apt install kmod -y
+
 WORKDIR /usr/local/src
 COPY src .
 
@@ -40,5 +43,12 @@ ENV TZ=Europe/Kiev
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 EXPOSE ${PORT} 
 
+RUN /etc/init.d/dahdi start
+RUN lsmod | grep dahdi
+
+RUN /etc/init.d/asterisk status
 RUN /etc/init.d/asterisk start
-CMD tail -f /dev/null
+RUN asterisk -rvvvvvvvvvvvvvvvvvvv
+
+# CMD tail -f /dev/null
+
