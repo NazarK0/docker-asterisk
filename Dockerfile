@@ -1,11 +1,12 @@
 FROM debian:bullseye
-RUN apt update && apt install -y make linux-headers-$(uname -r) perl gcc autoconf pkg-config m4 libtool automake
-#RUN apt update && apt install -y libpath-tiny-perl
-WORKDIR /usr/local/src
-COPY src .
+
+# Install build dependencies
 RUN apt update && apt upgrade -y
 RUN apt install -y libssl-dev libncurses-dev zlib1g-dev make gcc g++ libnewt-dev subversion linux-headers-$(uname -r) libxml2-dev
 RUN apt install -y perl autoconf build-essential pkg-config m4 libtool automake autoconf wget libedit-dev uuid-dev libjansson-dev libsqlite3-dev
+
+WORKDIR /usr/local/src
+COPY src .
 
 # Install Dahdi
 WORKDIR /usr/local/src/dahdi
@@ -21,22 +22,23 @@ RUN ./install_prereq install
 WORKDIR /usr/local/src/asterisk
 RUN ./configure
 RUN make menuselect
-#RUN make menuselect
 RUN make && make install
 RUN make progdocs
 RUN make samples && make config && ldconfig
 RUN make install-logrotate
 # RUN groupadd asterisk && useradd -r -d /var/lib/asterisk -g asterisk asterisk && usermod -aG audio,dialout asterisk
 # RUN chown -R asterisk.asterisk /etc/asterisk && chown -R asterisk.asterisk /var/{lib,log,spool}/asterisk && chown -R asterisk.asterisk /usr/lib/asterisk
+RUN mkdir /usr/local/src/asterisk/configs/user-configs
 
+# Remove build dependencies
+# RUN apt purge -y libssl-dev libncurses-dev zlib1g-dev make gcc g++ libnewt-dev subversion linux-headers-$(uname -r) libxml2-dev
+# RUN apt purge -y perl autoconf build-essential pkg-config m4 libtool automake autoconf wget libedit-dev uuid-dev libjansson-dev libsqlite3-dev
+RUN apt autoremove -y
 
 ENV PORT 80
 ENV TZ=Europe/Kiev
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 EXPOSE ${PORT} 
-RUN apt purge -y libssl-dev libncurses-dev zlib1g-dev make gcc g++ libnewt-dev subversion linux-headers-$(uname -r) libxml2-dev
-RUN apt purge -y perl autoconf build-essential pkg-config m4 libtool automake autoconf wget libedit-dev uuid-dev libjansson-dev libsqlite3-dev
 
-RUN mkdir /usr/local/src/asterisk/configs/user-configs
 RUN /etc/init.d/asterisk start
 CMD tail -f /dev/null
