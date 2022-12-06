@@ -38,10 +38,27 @@ RUN mkdir /usr/local/src/asterisk/configs/user-configs
 # RUN apt purge -y perl autoconf build-essential pkg-config m4 libtool automake autoconf wget libedit-dev uuid-dev libjansson-dev libsqlite3-dev
 RUN apt autoremove -y
 
-ENV PORT 80
 ENV TZ=Europe/Kiev
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
-EXPOSE ${PORT} 
+
+# SSH
+EXPOSE 22/tcp
+# GUI HTTP
+EXPOSE 80/tcp
+# GUI HTTPS
+EXPOSE 443/tcp
+# chan_PJSIP
+EXPOSE 5060/udp
+# chan_PJSIP
+EXPOSE 5061
+# chan_SIP
+EXPOSE 5160/udp
+# chan_SIP
+EXPOSE 5161
+# RTP
+EXPOSE 10000-20000/udp
+# IAX
+EXPOSE 4569/udp
 
 RUN /etc/init.d/dahdi start
 RUN lsmod | grep dahdi
@@ -51,4 +68,3 @@ RUN /etc/init.d/asterisk start
 RUN asterisk -rvvvvvvvvvvvvvvvvvvv
 
 # CMD tail -f /dev/null
-
