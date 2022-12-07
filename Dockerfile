@@ -1,42 +1,80 @@
 FROM debian:bullseye
 
-# Install build dependencies
-RUN apt update && apt upgrade -y
-RUN apt install -y libssl-dev libncurses-dev zlib1g-dev make gcc g++ libnewt-dev subversion linux-headers-$(uname -r) libxml2-dev
-RUN apt install -y perl autoconf build-essential pkg-config m4 libtool automake autoconf wget libedit-dev uuid-dev libjansson-dev libsqlite3-dev
+RUN apt-get update
 
-# Install tools
-RUN apt install kmod -y
+RUN apt install --no-install-recommends -y libssl-dev libncurses-dev zlib1g-dev make gcc g++ libnewt-dev subversion linux-headers-$(uname -r) libxml2-dev
+RUN apt install --no-install-recommends -y perl autoconf build-essential pkg-config m4 libtool automake autoconf wget libedit-dev uuid-dev libjansson-dev libsqlite3-dev
 
-WORKDIR /usr/local/src
-COPY src .
+WORKDIR /app
 
 # Install Dahdi
-WORKDIR /usr/local/src/dahdi
-RUN make && make install && make config && make install-config
+RUN wget http://downloads.asterisk.org/pub/telephony/dahdi-linux-complete/dahdi-linux-complete-current.tar.gz \
+  && tar -zxvf dahdi-linux-complete-current.tar.gz \
+  && rm -f dahdi-linux-complete-current.tar.gz \
+  && cd dahdi-linux-complete-* \
+  && make \
+  && make install \
+  && make config \
+  && make install-config
+# RUN /usr/local/src/ dahdi start
 
 # Install libPRI
 RUN apt install -y libpri1.4
 
-# Install Asterisk
-WORKDIR /usr/local/src/asterisk/contrib/scripts
-RUN ./get_mp3_source.sh
-RUN ./install_prereq install
-WORKDIR /usr/local/src/asterisk
-RUN ./configure
-RUN make menuselect
-RUN make && make install
-RUN make progdocs
-RUN make samples && make config && ldconfig
-RUN make install-logrotate
-# RUN groupadd asterisk && useradd -r -d /var/lib/asterisk -g asterisk asterisk && usermod -aG audio,dialout asterisk
-# RUN chown -R asterisk.asterisk /etc/asterisk && chown -R asterisk.asterisk /var/{lib,log,spool}/asterisk && chown -R asterisk.asterisk /usr/lib/asterisk
-RUN mkdir /usr/local/src/asterisk/configs/user-configs
+# RUN apt-get install --no-install-recommends -y \
+#   libncurses-dev libz-dev libxml2-dev libsqlite3-dev uuid-dev uuid libjansson-dev \
+#   libsnmp-dev libiksemel-dev libical-dev libspandsp-dev libsrtp-dev
 
-# Remove build dependencies
-# RUN apt purge -y libssl-dev libncurses-dev zlib1g-dev make gcc g++ libnewt-dev subversion linux-headers-$(uname -r) libxml2-dev
-# RUN apt purge -y perl autoconf build-essential pkg-config m4 libtool automake autoconf wget libedit-dev uuid-dev libjansson-dev libsqlite3-dev
-RUN apt autoremove -y
+# Install Asterisk
+RUN wget http://downloads.asterisk.org/pub/telephony/asterisk/asterisk-20-current.tar.gz \
+  && tar -zxvf asterisk-20-current.tar.gz \
+  && rm -f asterisk-20-current.tar.gz \
+  && cd asterisk-20.*/contrib/scripts \
+  # && ./get_mp3_source.sh \
+  && ./install_prereq install \
+  && cd ../.. \
+  && ./configure NOISY_BUILD=yes \
+  && make menuselect.makeopts \
+  && menuselect/menuselect \
+  --enable CORE-SOUNDS-EN-WAV \
+  --enable CORE-SOUNDS-EN-G722 \
+  --enable CORE-SOUNDS-EN-ULAW \
+  --enable CORE-SOUNDS-EN-GSM \
+  --enable MOH-OPSOUND-WAV \
+  --enable MOH-OPSOUND-G722 \
+  --enable MOH-OPSOUND-ULAW \
+  --enable MOH-OPSOUND-GSM \
+  --enable EXTRA-SOUNDS-EN-WAV \
+  --enable EXTRA-SOUNDS-EN-G722 \
+  --enable EXTRA-SOUNDS-EN-ULAW \
+  --enable EXTRA-SOUNDS-EN-GSM \
+  menuselect.makeopts \
+  && make install \
+  && make progdocs \
+  && make samples \
+  && make config \
+  && ldconfig \
+  && make install-logrotate
+
+WORKDIR /var/lib/asterisk/sounds
+
+RUN wget http://downloads.asterisk.org/pub/telephony/sounds/asterisk-extra-sounds-en-wav-current.tar.gz \
+  && tar xfz asterisk-extra-sounds-en-wav-current.tar.gz \
+  && rm -f asterisk-extra-sounds-en-wav-current.tar.gz
+
+RUN wget http://downloads.asterisk.org/pub/telephony/sounds/asterisk-extra-sounds-en-g722-current.tar.gz \
+  && tar xfz asterisk-extra-sounds-en-g722-current.tar.gz \
+  && rm -f asterisk-extra-sounds-en-g722-current.tar.gz
+
+RUN wget http://downloads.asterisk.org/pub/telephony/sounds/asterisk-extra-sounds-en-ulaw-current.tar.gz \
+  && tar xfz asterisk-extra-sounds-en-ulaw-current.tar.gz \
+  && rm -f asterisk-extra-sounds-en-ulaw-current.tar.gz
+
+RUN wget http://downloads.asterisk.org/pub/telephony/sounds/asterisk-extra-sounds-en-gsm-current.tar.gz \
+  && tar xfz asterisk-extra-sounds-en-gsm-current.tar.gz \
+  && rm -f asterisk-extra-sounds-en-gsm-current.tar.gz
+
+ADD asterisk /etc/asterisk
 
 ENV TZ=Europe/Kiev
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
@@ -59,12 +97,5 @@ EXPOSE 5161
 EXPOSE 10000-20000/udp
 # IAX
 EXPOSE 4569/udp
-
-ADD asterisk /etc/asterisk
-
-RUN invoke-rc.d dahdi start
-RUN service asterisk start
-# RUN lsmod | grep dahdi
-# RUN asterisk -rvvvvvvvvvvvvvvvvvvv
 
 ENTRYPOINT asterisk -cvvvvv
