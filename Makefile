@@ -1,11 +1,11 @@
 run:
-	docker build -t nazark0/asterisk . && docker run --volume "$(pwd)"/configs:/usr/local/src/asterisk/configs/user-configs -p 80:80 --name asterisk-dev nazark0/asterisk 
+	./preinstall.sh && docker compose up --build
 push:
 	docker container commit asterisk-dev nazark0/asterisk:latest
 	docker push nazark0/asterisk
-rm:
-	docker stop asterisk-dev && docker rm asterisk-dev
+stop:
+	docker compose down --remove-orphans
 console:
-	docker exec -it asterisk-dev bash
+	docker exec -it asterisk-dev sh
 logs:
 	docker logs asterisk-dev

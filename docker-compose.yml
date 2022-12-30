@@ -1,0 +1,55 @@
+services:
+  asterisk:
+    build:
+      context: .
+      dockerfile: Dockerfile.ast
+    restart: always
+    network_mode: "host"
+    container_name: asterisk-dev
+    hostname: "asterisk"
+    volumes:
+      - ./logs:/var/log/asterisk
+    depends_on:
+      - db
+  db:
+    build:
+      context: .
+      dockerfile: Dockerfile.pg
+    container_name: db-ns
+    hostname: "db"
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_PASSWORD: "jtyuajrqwzdl"
+      POSTGRES_USER: admin
+    volumes:
+      - db-volume:/data/db
+    healthcheck:
+      test: pg_isready -U admin -d asterisk
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks:
+      ns-net:
+        ipv4_address: 172.16.238.5
+  adminer:
+    image: adminer
+    container_name: pg-adminer
+    restart: always
+    ports:
+      - 8080:8080
+    depends_on:
+      - db
+    links:
+      - db
+    networks:
+      - ns-net
+volumes:
+  db-volume:
+networks:
+  ns-net:
+    ipam:
+      driver: default
+      config:
+        - subnet: "172.16.238.0/26"

@@ -1,0 +1,56 @@
+FROM debian:bullseye
+
+RUN apt-get update
+
+RUN apt install --no-install-recommends -y libssl-dev libncurses-dev zlib1g-dev make gcc g++ libnewt-dev subversion linux-headers-$(uname -r) libxml2-dev
+RUN apt install --no-install-recommends -y perl autoconf build-essential pkg-config m4 libtool automake autoconf wget libedit-dev uuid-dev libjansson-dev libsqlite3-dev
+
+WORKDIR /app
+
+# Install Dahdi
+RUN wget http://downloads.asterisk.org/pub/telephony/dahdi-linux-complete/dahdi-linux-complete-current.tar.gz \
+  && tar -zxvf dahdi-linux-complete-current.tar.gz \
+  && rm -f dahdi-linux-complete-current.tar.gz \
+  && cd dahdi-linux-complete-* \
+  && make \
+  && make install \
+  && make config \
+  && make install-config
+# RUN /usr/local/src/ dahdi start
+
+# Install libPRI
+RUN apt install -y libpri1.4
+
+# Install Asterisk
+RUN wget http://downloads.asterisk.org/pub/telephony/asterisk/asterisk-18-current.tar.gz \
+  && tar -zxvf asterisk-18-current.tar.gz \
+  && cd asterisk-18.*/contrib/scripts \
+  && ./get_mp3_source.sh \
+  && ./install_prereq install
+RUN ./configure \
+  && make menuselect.makeopts \
+  && menuselect/menuselect \
+  --enable all \
+  menuselect.makeopts \
+  && make install \
+  && make progdocs \
+  && make samples \
+  && make config \
+  && ldconfig \
+  && make install-logrotate
+
+WORKDIR /etc/asterisk
+RUN rm -rf ./*
+COPY configs .
+WORKDIR /var/lib/asterisk/sounds/
+COPY sounds .
+
+# set default timezone
+ENV TZ=Europe/Kiev
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+# necessary wrapping script for checking database status
+WORKDIR /
+COPY wait-for-postgres.py .
+COPY docker-entrypoint.sh .
+ENTRYPOINT ["/usr/bin/python3", "wait-for-postgres.py", "--host", "172.16.238.5", "--command", "./docker-entrypoint.sh"]
