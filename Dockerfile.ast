@@ -1,8 +1,9 @@
 FROM debian:bullseye
 
 RUN apt-get update
+ENV DEBIAN_FRONTEND=noninteractive
 
-RUN apt install --no-install-recommends -y libssl-dev libncurses-dev zlib1g-dev make gcc g++ libnewt-dev subversion linux-headers-$(uname -r) libxml2-dev
+RUN apt install --no-install-recommends -y libssl-dev libncurses-dev zlib1g-dev make gcc g++ libnewt-dev subversion linux-headers-$(uname -r) libxml2-dev libpq-dev
 RUN apt install --no-install-recommends -y perl autoconf build-essential pkg-config m4 libtool automake autoconf wget libedit-dev uuid-dev libjansson-dev libsqlite3-dev
 
 WORKDIR /app
@@ -22,15 +23,21 @@ RUN wget http://downloads.asterisk.org/pub/telephony/dahdi-linux-complete/dahdi-
 RUN apt install -y libpri1.4
 
 # Install Asterisk
-RUN wget http://downloads.asterisk.org/pub/telephony/asterisk/asterisk-18-current.tar.gz \
-  && tar -zxvf asterisk-18-current.tar.gz \
-  && cd asterisk-18.*/contrib/scripts \
-  && ./get_mp3_source.sh \
+# online 
+# RUN wget http://downloads.asterisk.org/pub/telephony/asterisk/asterisk-18-current.tar.gz \
+#   && tar -zxvf asterisk-18-current.tar.gz \
+
+# offline
+COPY asterisk-20-current.tar.gz .
+RUN tar -zxvf asterisk-20-current.tar.gz \
+  && cd asterisk-20.*/contrib/scripts \
+  && ./get_mp3_source.sh --non-interactive --trust-server-cert\
   && ./install_prereq install
-RUN ./configure \
+RUN cd asterisk-20.* \
+  && ./configure \
   && make menuselect.makeopts \
   && menuselect/menuselect \
-  --enable all \
+  --enable-all \
   menuselect.makeopts \
   && make install \
   && make progdocs \
