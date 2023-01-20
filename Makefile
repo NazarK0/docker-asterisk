@@ -1,5 +1,5 @@
 build:
-	docker build -t asterisk-dev .
+	docker build -t asterisk --build-arg VERSION=20.1.0 .
+	docker tag asterisk nazark0/asterisk
 push:
-	docker container commit asterisk-dev nazark0/asterisk:latest
-	docker push nazark0/asterisk
+	docker image push nazark0/asterisk
