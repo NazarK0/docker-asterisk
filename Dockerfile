@@ -1,6 +1,6 @@
 FROM debian:bullseye
 
-RUN apt-get update
+RUN apt update && apt upgrade -y
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt install --no-install-recommends -y libssl-dev libncurses-dev zlib1g-dev make gcc g++ libnewt-dev subversion linux-headers-$(uname -r) libxml2-dev libpq-dev
